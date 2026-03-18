@@ -17,8 +17,9 @@ let currentCategory = null;
 // DOM helpers
 function $(id) { return document.getElementById(id); }
 
-// Auth logic (same as before)
+// Auth logic - FIXED
 function handleAuthSubmit() {
+  console.log("Auth button clicked!"); // Debug log
   const name = $("#user-name").value.trim();
   const mobile = $("#user-mobile").value.trim();
   const errorEl = $("#auth-error");
@@ -33,37 +34,37 @@ function handleAuthSubmit() {
   localStorage.setItem("societyUser", JSON.stringify(currentUser));
   errorEl.classList.add("hidden");
   showDirectoryScreen();
+  console.log("Auth successful, showing directory"); // Debug log
 }
 
 function showDirectoryScreen() {
   $("#auth-screen").classList.add("hidden");
   $("#directory-screen").classList.remove("hidden");
-  if (localStorage.getItem("societyUser")) {
-    $("#user-name").value = "";
-    $("#user-mobile").value = "";
-  }
 }
 
 // Chat functionality
 function appendMessage(text, sender = "bot") {
   const chatWindow = $("#chat-window");
   const div = document.createElement("div");
-  div.className = `p-4 rounded-2xl ${sender === "bot" ? "bg-bot text-gray-800 max-w-xs" : "bg-success text-gray-900 ml-auto max-w-xs"} shadow-sm`;
+  div.className = `p-4 rounded-2xl ${sender === "bot" ? "bg-blue-100 text-gray-800 max-w-xs" : "bg-green-200 text-gray-900 ml-auto max-w-xs"} shadow-sm mb-3`;
   div.innerHTML = text;
   chatWindow.appendChild(div);
   chatWindow.scrollTop = chatWindow.scrollHeight;
 }
 
+function normalize(text) {
+  return text.toLowerCase().trim();
+}
+
 function extractIntent(query) {
-  const norm = query.toLowerCase().trim();
+  const norm = normalize(query);
   const intent = { category: null, area: null, number: null };
   
-  // Category detection
   const categoryMap = {
-    plumber: ["plumber", "plambar", "नल"],
-    electrician: ["electrician", "bijli", "बिजली"],
-    food: ["food", "tiffin", "dabba", "खाना"],
-    vegetable: ["sabzi", "sabji", "vegetable"],
+    plumber: ["plumber", "plambar"],
+    electrician: ["electrician", "bijli"],
+    food: ["food", "tiffin", "dabba"],
+    vegetable: ["sabzi", "sabji"],
     maid: ["maid", "kaamwali"]
   };
   
@@ -74,11 +75,9 @@ function extractIntent(query) {
     }
   }
   
-  // Area detection
   const areaMatch = norm.match(/(tower|block|gate)\s*([a-z0-9]+)/i);
   if (areaMatch) intent.area = areaMatch[2].toUpperCase();
   
-  // Number detection
   const numMatch = norm.match(/(\d{4,})/);
   if (numMatch) intent.number = numMatch[1];
   
@@ -111,35 +110,36 @@ function handleChatMessage() {
     return;
   }
   
-  let reply = `<strong>✅ Found ${results.length} service(s):</strong><br>`;
+  let reply = `<strong>✅ Found ${results.length} service(s):</strong><br><br>`;
   results.slice(0, 3).forEach(entry => {
     reply += `
-      <div class="mt-2 p-2 bg-white/50 rounded-xl">
-        <div class="font-semibold">${entry.name}</div>
-        <div class="text-sm text-gray-600">${entry.area} • ${entry.category}</div>
-        <div class="text-xs text-gray-500">${entry.mobile_number}</div>
+      <div class="mt-3 p-3 bg-white rounded-xl shadow-md">
+        <div class="font-bold">${entry.name}</div>
+        <div class="text-sm text-gray-600">${entry.area} • ${entry.category.toUpperCase()}</div>
+        <div class="text-xs bg-gray-100 px-2 py-1 rounded mt-1">${entry.mobile_number}</div>
       </div>`;
   });
   
-  if (results.length > 3) reply += `<div class="text-sm mt-1">...and ${results.length - 3} more</div>`;
   appendMessage(reply, "bot");
 }
 
-// Category browser functionality
+// Category browser - FIXED selectors & logic
 function renderCategories() {
-  const catContainer = $(" .grid"); // Wait, fix selector
-  wait, the grid is inside category-tab-content
-  const grid = $("#category-tab-content .grid");
-  const uniqueCats = [...new Set(DIRECTORY.map(d => d.category))];
+  const gridContainer = document.querySelector("#category-tab-content .grid");
+  if (!gridContainer) return;
   
-  grid.innerHTML = uniqueCats.map(cat => `
-    <button onclick="selectCategory('${cat}')" 
-            class="group p-6 rounded-3xl bg-gradient-to-br hover:from-primary/10 hover:to-blue-100 border-2 border-transparent hover:border-primary/30 transition-all duration-300 hover:scale-105 hover:shadow-xl text-left">
-      <div class="text-3xl mb-2">${getCategoryEmoji(cat)}</div>
-      <div class="font-bold text-lg">${cat.charAt(0).toUpperCase() + cat.slice(1)}</div>
-      <div class="text-sm text-gray-500 group-hover:text-primary">${getVendorCount(cat)} vendors</div>
-    </button>
-  `).join('');
+  const uniqueCats = [...new Set(DIRECTORY.map(d => d.category))];
+  gridContainer.innerHTML = uniqueCats.map(cat => {
+    const count = DIRECTORY.filter(d => d.category === cat).length;
+    return `
+      <button class="category-btn p-6 rounded-3xl bg-gradient-to-br from-gray-50 to-gray-100 hover:from-primary/10 hover:to-blue-100 border-2 border-transparent hover:border-primary/50 transition-all duration-300 hover:shadow-xl hover:scale-[1.02] text-left group" 
+              data-category="${cat}">
+        <div class="text-3xl mb-3">${getCategoryEmoji(cat)}</div>
+        <div class="font-bold text-lg text-gray-900">${formatCategory(cat)}</div>
+        <div class="text-sm text-gray-500 group-hover:text-primary mt-1">${count} vendors</div>
+      </button>
+    `;
+  }).join('');
 }
 
 function getCategoryEmoji(cat) {
@@ -147,8 +147,8 @@ function getCategoryEmoji(cat) {
   return emojis[cat] || "👥";
 }
 
-function getVendorCount(cat) {
-  return DIRECTORY.filter(d => d.category === cat).length;
+function formatCategory(cat) {
+  return cat.charAt(0).toUpperCase() + cat.slice(1);
 }
 
 function selectCategory(cat) {
@@ -157,33 +157,40 @@ function selectCategory(cat) {
   const list = $("#vendor-list");
   
   list.innerHTML = `
-    <div class="mb-8">
-      <button onclick="backToCategories()" class="flex items-center text-primary hover:text-primary/80 mb-6">
+    <div class="mb-8 p-4 bg-gray-50 rounded-2xl">
+      <button id="back-to-categories" class="flex items-center text-primary hover:text-primary/80 font-semibold mb-4">
         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
         </svg>
-        Back to Categories
+        All Categories (${Object.keys(getCategoryCounts()).length})
       </button>
-      <h3 class="text-2xl font-bold text-gray-900 mb-4">${cat.charAt(0).toUpperCase() + cat.slice(1)} (${vendors.length})</h3>
+      <h3 class="text-2xl font-bold text-gray-900 mb-2">${formatCategory(cat)}</h3>
+      <div class="text-lg text-gray-600">${vendors.length} services available</div>
     </div>
     ${vendors.map(vendor => `
-      <div class="bg-white p-6 rounded-3xl shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 border border-gray-100">
-        <div class="flex justify-between items-start mb-3">
-          <h4 class="font-bold text-xl text-gray-900">${vendor.name}</h4>
-          <div class="text-sm bg-${vendor.category === 'food' ? 'green' : 'yellow'}-100 px-3 py-1 rounded-full font-medium">${vendor.area}</div>
+      <div class="bg-white p-6 rounded-3xl shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 border border-gray-100 group">
+        <div class="flex justify-between items-start mb-4">
+          <div>
+            <h4 class="font-bold text-xl text-gray-900 leading-tight">${vendor.name}</h4>
+            <div class="inline-flex items-center bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium mt-1">${vendor.area}</div>
+          </div>
+          <div class="text-2xl">${getCategoryEmoji(cat)}</div>
         </div>
-        <div class="flex gap-3 pt-4 border-t border-gray-100">
-          <a href="tel:${vendor.mobile_number}" class="flex-1 bg-green-500 hover:bg-green-600 text-white text-center py-3 px-4 rounded-2xl font-semibold shadow-lg transition-all duration-200">
-            📞 Call
+        <div class="flex gap-3 pb-4">
+          <a href="tel:+91${vendor.mobile_number}" class="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white text-center py-4 px-6 rounded-2xl font-bold shadow-lg transition-all duration-300 group-hover:scale-105">
+            📞 Call Now
           </a>
-          <a href="https://wa.me/91${vendor.mobile_number}" target="_blank" class="flex-1 bg-green-600 hover:bg-green-700 text-white text-center py-3 px-4 rounded-2xl font-semibold shadow-lg transition-all duration-200">
+          <a href="https://wa.me/91${vendor.mobile_number}?text=Hi%20from%20Society%20Directory" target="_blank" class="flex-1 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white text-center py-4 px-6 rounded-2xl font-bold shadow-lg transition-all duration-300 group-hover:scale-105">
             💬 WhatsApp
           </a>
         </div>
-        <div class="mt-3 text-xs text-gray-500">${vendor.tags}</div>
+        <div class="text-xs text-gray-500 bg-gray-50 p-3 rounded-xl">${vendor.tags}</div>
       </div>
     `).join('')}
   `;
+  
+  // Add back button event
+  $("#back-to-categories").onclick = backToCategories;
 }
 
 function backToCategories() {
@@ -192,43 +199,73 @@ function backToCategories() {
   renderCategories();
 }
 
-// Tab switching
+function getCategoryCounts() {
+  return DIRECTORY.reduce((acc, d) => {
+    acc[d.category] = (acc[d.category] || 0) + 1;
+    return acc;
+  }, {});
+}
+
+// Tab switching - FIXED class handling
 function switchToChat() {
-  $("#chat-tab").classList.add("bg-primary", "text-white");
-  $("#category-tab").classList.remove("bg-primary", "text-white");
+  $("#chat-tab").classList.add("bg-primary", "text-white", "shadow-lg");
+  $("#chat-tab").classList.remove("bg-transparent", "text-gray-700");
+  $("#category-tab").classList.remove("bg-primary", "text-white", "shadow-lg");
+  $("#category-tab").classList.add("bg-transparent", "text-gray-700");
   $("#chat-tab-content").classList.remove("hidden");
   $("#category-tab-content").classList.add("hidden");
 }
 
 function switchToCategories() {
-  $("#chat-tab").classList.remove("bg-primary", "text-white");
-  $("#category-tab").classList.add("bg-primary", "text-white");
+  $("#chat-tab").classList.remove("bg-primary", "text-white", "shadow-lg");
+  $("#chat-tab").classList.add("bg-transparent", "text-gray-700");
+  $("#category-tab").classList.add("bg-primary", "text-white", "shadow-lg");
+  $("#category-tab").classList.remove("bg-transparent", "text-gray-700");
   $("#chat-tab-content").classList.add("hidden");
   $("#category-tab-content").classList.remove("hidden");
-  renderCategories();
+  if (!currentCategory) renderCategories();
+}
+
+// Category button delegation (since dynamically created)
+function initCategoryButtons() {
+  document.addEventListener('click', function(e) {
+    if (e.target.closest('.category-btn')) {
+      const cat = e.target.closest('.category-btn').dataset.category;
+      selectCategory(cat);
+    }
+  });
 }
 
 // Init everything
 document.addEventListener("DOMContentLoaded", () => {
+  console.log("Page loaded, initializing...");
+  
   // Auth
-  $("#auth-submit").onclick = handleAuthSubmit;
+  $("#auth-submit").addEventListener("click", handleAuthSubmit);
   
   // Check saved user
   const saved = localStorage.getItem("societyUser");
   if (saved) {
     currentUser = JSON.parse(saved);
     showDirectoryScreen();
-    switchToCategories(); // Default to categories
+    switchToCategories();
   }
   
   // Chat events
-  $("#chat-send").onclick = handleChatMessage;
-  $("#chat-input").onkeydown = (e) => e.key === "Enter" && handleChatMessage();
+  $("#chat-send").addEventListener("click", handleChatMessage);
+  $("#chat-input").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") handleChatMessage();
+  });
   
   // Tab events
-  $("#chat-tab").onclick = switchToChat;
-  $("#category-tab").onclick = switchToCategories;
+  $("#chat-tab").addEventListener("click", switchToChat);
+  $("#category-tab").addEventListener("click", switchToCategories);
   
-  DIRECTORY = [...DUMMY_DIRECTORY]; // Load dummy data
+  // Category delegation
+  initCategoryButtons();
+  
+  DIRECTORY = [...DUMMY_DIRECTORY];
   $("#last-updated").textContent = new Date().toLocaleString();
+  
+  console.log("Initialization complete!");
 });

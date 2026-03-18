@@ -1,271 +1,218 @@
-// Dummy data - replace with live Google Sheets later
-const DUMMY_DIRECTORY = [
-  { mobile_number: "9876543210", category: "plumber", name: "Ramesh Plumber", area: "Tower A", tags: "leak repair, pipes" },
-  { mobile_number: "9876543220", category: "plumber", name: "Suresh Water Fix", area: "Tower B", tags: "water tank" },
-  { mobile_number: "9876543230", category: "electrician", name: "Govind Electric", area: "Tower A", tags: "wiring, fan" },
-  { mobile_number: "9876543240", category: "electrician", name: "Rajesh Lights", area: "Gate 1", tags: "LED lights" },
-  { mobile_number: "9876543250", category: "food", name: "Maa Tiffin Service", area: "Tower C", tags: "veg, non-veg" },
-  { mobile_number: "9876543260", category: "food", name: "Sharma Dabbawala", area: "Tower A", tags: "office lunch" },
-  { mobile_number: "9876543270", category: "vegetable", name: "Sabziwala Bhai", area: "Main Market", tags: "fresh veggies" },
-  { mobile_number: "9876543280", category: "maid", name: "Sunita Tai", area: "Tower B", tags: "cleaning, cooking" }
+// DUMMY DATA
+const SERVICES = [
+  {
+    mobile: "9876543210",
+    category: "plumber",
+    name: "Ramesh Plumber",
+    area: "Tower A",
+    tags: "leak repair",
+  },
+  {
+    mobile: "9876543220",
+    category: "plumber",
+    name: "Suresh Plumbing",
+    area: "Tower B",
+    tags: "pipes",
+  },
+  {
+    mobile: "9876543230",
+    category: "electrician",
+    name: "Govind Electric",
+    area: "Tower A",
+    tags: "wiring",
+  },
+  {
+    mobile: "9876543240",
+    category: "electrician",
+    name: "Rajesh Lights",
+    area: "Gate 1",
+    tags: "LED",
+  },
+  {
+    mobile: "9876543250",
+    category: "food",
+    name: "Maa Tiffin",
+    area: "Tower C",
+    tags: "veg meals",
+  },
+  {
+    mobile: "9876543260",
+    category: "food",
+    name: "Sharma Dabbawala",
+    area: "Tower A",
+    tags: "lunch",
+  },
+  {
+    mobile: "9876543270",
+    category: "vegetable",
+    name: "Sabziwala",
+    area: "Market",
+    tags: "fresh",
+  },
+  {
+    mobile: "9876543280",
+    category: "maid",
+    name: "Sunita Cleaning",
+    area: "Tower B",
+    tags: "housework",
+  },
 ];
 
-let DIRECTORY = [...DUMMY_DIRECTORY];
 let currentUser = null;
-let currentCategory = null;
+let currentCat = null;
 
-// DOM helpers
-function $(id) { return document.getElementById(id); }
-
-// Auth logic - FIXED
-function handleAuthSubmit() {
-  console.log("Auth button clicked!"); // Debug log
-  const name = $("#user-name").value.trim();
-  const mobile = $("#user-mobile").value.trim();
-  const errorEl = $("#auth-error");
-  
-  if (!name || !mobile || !/^\d{10}$/.test(mobile)) {
-    errorEl.textContent = "Please enter valid name & 10-digit mobile.";
-    errorEl.classList.remove("hidden");
-    return;
-  }
-  
-  currentUser = { name, mobile };
-  localStorage.setItem("societyUser", JSON.stringify(currentUser));
-  errorEl.classList.add("hidden");
-  showDirectoryScreen();
-  console.log("Auth successful, showing directory"); // Debug log
+// HELPERS
+function q(id) {
+  return document.getElementById(id);
 }
-
-function showDirectoryScreen() {
-  $("#auth-screen").classList.add("hidden");
-  $("#directory-screen").classList.remove("hidden");
-}
-
-// Chat functionality
-function appendMessage(text, sender = "bot") {
-  const chatWindow = $("#chat-window");
+function addMsg(text, isUser = false) {
+  const msgs = q("chat-messages");
   const div = document.createElement("div");
-  div.className = `p-4 rounded-2xl ${sender === "bot" ? "bg-blue-100 text-gray-800 max-w-xs" : "bg-green-200 text-gray-900 ml-auto max-w-xs"} shadow-sm mb-3`;
+  div.className = `p-4 rounded-xl max-w-xs ${isUser ? "ml-auto bg-green-400 text-white" : "bg-white shadow"}`;
   div.innerHTML = text;
-  chatWindow.appendChild(div);
-  chatWindow.scrollTop = chatWindow.scrollHeight;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
 }
 
-function normalize(text) {
-  return text.toLowerCase().trim();
-}
+// AUTH
+q("auth-submit").onclick = function () {
+  const name = q("user-name").value.trim();
+  const mobile = q("user-mobile").value.trim();
 
-function extractIntent(query) {
-  const norm = normalize(query);
-  const intent = { category: null, area: null, number: null };
-  
-  const categoryMap = {
-    plumber: ["plumber", "plambar"],
-    electrician: ["electrician", "bijli"],
-    food: ["food", "tiffin", "dabba"],
-    vegetable: ["sabzi", "sabji"],
-    maid: ["maid", "kaamwali"]
-  };
-  
-  for (const [cat, keywords] of Object.entries(categoryMap)) {
-    if (keywords.some(kw => norm.includes(kw))) {
-      intent.category = cat;
-      break;
-    }
-  }
-  
-  const areaMatch = norm.match(/(tower|block|gate)\s*([a-z0-9]+)/i);
-  if (areaMatch) intent.area = areaMatch[2].toUpperCase();
-  
-  const numMatch = norm.match(/(\d{4,})/);
-  if (numMatch) intent.number = numMatch[1];
-  
-  return intent;
-}
-
-function searchDirectory(query) {
-  const intent = extractIntent(query);
-  return DIRECTORY.filter(entry => {
-    let matches = true;
-    if (intent.number && !entry.mobile_number.includes(intent.number)) matches = false;
-    if (intent.category && entry.category !== intent.category) matches = false;
-    if (intent.area && !entry.area.toUpperCase().includes(intent.area)) matches = false;
-    return matches;
-  });
-}
-
-function handleChatMessage() {
-  const input = $("#chat-input");
-  const query = input.value.trim();
-  if (!query) return;
-  
-  appendMessage(`<strong>You:</strong> ${query}`, "user");
-  input.value = "";
-  
-  const results = searchDirectory(query);
-  
-  if (results.length === 0) {
-    appendMessage("❌ No services found. Try 'plumber', '98765', or 'tiffin Tower A'.", "bot");
+  if (!name || !mobile || mobile.length !== 10 || isNaN(mobile)) {
+    q("auth-error").textContent = "Enter valid name & 10-digit mobile";
+    q("auth-error").classList.remove("hidden");
     return;
   }
-  
-  let reply = `<strong>✅ Found ${results.length} service(s):</strong><br><br>`;
-  results.slice(0, 3).forEach(entry => {
-    reply += `
-      <div class="mt-3 p-3 bg-white rounded-xl shadow-md">
-        <div class="font-bold">${entry.name}</div>
-        <div class="text-sm text-gray-600">${entry.area} • ${entry.category.toUpperCase()}</div>
-        <div class="text-xs bg-gray-100 px-2 py-1 rounded mt-1">${entry.mobile_number}</div>
-      </div>`;
-  });
-  
-  appendMessage(reply, "bot");
-}
 
-// Category browser - FIXED selectors & logic
-function renderCategories() {
-  const gridContainer = document.querySelector("#category-tab-content .grid");
-  if (!gridContainer) return;
-  
-  const uniqueCats = [...new Set(DIRECTORY.map(d => d.category))];
-  gridContainer.innerHTML = uniqueCats.map(cat => {
-    const count = DIRECTORY.filter(d => d.category === cat).length;
-    return `
-      <button class="category-btn p-6 rounded-3xl bg-gradient-to-br from-gray-50 to-gray-100 hover:from-primary/10 hover:to-blue-100 border-2 border-transparent hover:border-primary/50 transition-all duration-300 hover:shadow-xl hover:scale-[1.02] text-left group" 
-              data-category="${cat}">
-        <div class="text-3xl mb-3">${getCategoryEmoji(cat)}</div>
-        <div class="font-bold text-lg text-gray-900">${formatCategory(cat)}</div>
-        <div class="text-sm text-gray-500 group-hover:text-primary mt-1">${count} vendors</div>
-      </button>
-    `;
-  }).join('');
-}
+  currentUser = { name, mobile };
+  localStorage.setItem("user", JSON.stringify(currentUser));
+  q("auth-error").classList.add("hidden");
+  q("auth-screen").style.display = "none";
+  q("directory-screen").style.display = "flex";
+  showCategories();
+};
 
-function getCategoryEmoji(cat) {
-  const emojis = { plumber: "🔧", electrician: "⚡", food: "🍛", vegetable: "🥕", maid: "🧹" };
-  return emojis[cat] || "👥";
-}
+// TABS
+q("chat-tab-btn").onclick = function () {
+  q("chat-container").style.display = "flex";
+  q("category-container").style.display = "none";
+  q("chat-tab-btn").classList.add("bg-blue-600", "text-white");
+  q("cat-tab-btn").classList.remove("bg-blue-600", "text-white");
+};
 
-function formatCategory(cat) {
-  return cat.charAt(0).toUpperCase() + cat.slice(1);
-}
+q("cat-tab-btn").onclick = function () {
+  q("chat-container").style.display = "none";
+  q("category-container").style.display = "block";
+  q("chat-tab-btn").classList.remove("bg-blue-600", "text-white");
+  q("cat-tab-btn").classList.add("bg-blue-600", "text-white");
+  showCategories();
+};
 
-function selectCategory(cat) {
-  currentCategory = cat;
-  const vendors = DIRECTORY.filter(d => d.category === cat);
-  const list = $("#vendor-list");
-  
-  list.innerHTML = `
-    <div class="mb-8 p-4 bg-gray-50 rounded-2xl">
-      <button id="back-to-categories" class="flex items-center text-primary hover:text-primary/80 font-semibold mb-4">
-        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-        </svg>
-        All Categories (${Object.keys(getCategoryCounts()).length})
-      </button>
-      <h3 class="text-2xl font-bold text-gray-900 mb-2">${formatCategory(cat)}</h3>
-      <div class="text-lg text-gray-600">${vendors.length} services available</div>
-    </div>
-    ${vendors.map(vendor => `
-      <div class="bg-white p-6 rounded-3xl shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 border border-gray-100 group">
-        <div class="flex justify-between items-start mb-4">
-          <div>
-            <h4 class="font-bold text-xl text-gray-900 leading-tight">${vendor.name}</h4>
-            <div class="inline-flex items-center bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium mt-1">${vendor.area}</div>
-          </div>
-          <div class="text-2xl">${getCategoryEmoji(cat)}</div>
-        </div>
-        <div class="flex gap-3 pb-4">
-          <a href="tel:+91${vendor.mobile_number}" class="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white text-center py-4 px-6 rounded-2xl font-bold shadow-lg transition-all duration-300 group-hover:scale-105">
-            📞 Call Now
-          </a>
-          <a href="https://wa.me/91${vendor.mobile_number}?text=Hi%20from%20Society%20Directory" target="_blank" class="flex-1 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white text-center py-4 px-6 rounded-2xl font-bold shadow-lg transition-all duration-300 group-hover:scale-105">
-            💬 WhatsApp
-          </a>
-        </div>
-        <div class="text-xs text-gray-500 bg-gray-50 p-3 rounded-xl">${vendor.tags}</div>
-      </div>
-    `).join('')}
-  `;
-  
-  // Add back button event
-  $("#back-to-categories").onclick = backToCategories;
-}
+// CHAT
+q("chat-send").onclick = chatSearch;
+q("chat-input").onkeypress = function (e) {
+  if (e.key === "Enter") chatSearch();
+};
 
-function backToCategories() {
-  currentCategory = null;
-  $("#vendor-list").innerHTML = "";
-  renderCategories();
-}
+function chatSearch() {
+  const input = q("chat-input");
+  const query = input.value.trim().toLowerCase();
+  if (!query) return;
 
-function getCategoryCounts() {
-  return DIRECTORY.reduce((acc, d) => {
-    acc[d.category] = (acc[d.category] || 0) + 1;
-    return acc;
-  }, {});
-}
+  addMsg(`<strong>You:</strong> ${query}`, true);
+  input.value = "";
 
-// Tab switching - FIXED class handling
-function switchToChat() {
-  $("#chat-tab").classList.add("bg-primary", "text-white", "shadow-lg");
-  $("#chat-tab").classList.remove("bg-transparent", "text-gray-700");
-  $("#category-tab").classList.remove("bg-primary", "text-white", "shadow-lg");
-  $("#category-tab").classList.add("bg-transparent", "text-gray-700");
-  $("#chat-tab-content").classList.remove("hidden");
-  $("#category-tab-content").classList.add("hidden");
-}
+  // Simple search
+  const results = SERVICES.filter(
+    (s) =>
+      s.name.toLowerCase().includes(query) ||
+      s.mobile.includes(query) ||
+      s.category.includes(query) ||
+      s.area.toLowerCase().includes(query),
+  );
 
-function switchToCategories() {
-  $("#chat-tab").classList.remove("bg-primary", "text-white", "shadow-lg");
-  $("#chat-tab").classList.add("bg-transparent", "text-gray-700");
-  $("#category-tab").classList.add("bg-primary", "text-white", "shadow-lg");
-  $("#category-tab").classList.remove("bg-transparent", "text-gray-700");
-  $("#chat-tab-content").classList.add("hidden");
-  $("#category-tab-content").classList.remove("hidden");
-  if (!currentCategory) renderCategories();
-}
-
-// Category button delegation (since dynamically created)
-function initCategoryButtons() {
-  document.addEventListener('click', function(e) {
-    if (e.target.closest('.category-btn')) {
-      const cat = e.target.closest('.category-btn').dataset.category;
-      selectCategory(cat);
-    }
-  });
-}
-
-// Init everything
-document.addEventListener("DOMContentLoaded", () => {
-  console.log("Page loaded, initializing...");
-  
-  // Auth
-  $("#auth-submit").addEventListener("click", handleAuthSubmit);
-  
-  // Check saved user
-  const saved = localStorage.getItem("societyUser");
-  if (saved) {
-    currentUser = JSON.parse(saved);
-    showDirectoryScreen();
-    switchToCategories();
+  if (results.length === 0) {
+    addMsg("No services found. Try 'plumber', 'tiffin', or a phone number.");
+    return;
   }
-  
-  // Chat events
-  $("#chat-send").addEventListener("click", handleChatMessage);
-  $("#chat-input").addEventListener("keydown", (e) => {
-    if (e.key === "Enter") handleChatMessage();
+
+  let msg = `Found ${results.length}:<br><br>`;
+  results.slice(0, 3).forEach((s) => {
+    msg += `<div class="mt-2 p-2 bg-blue-100 rounded">
+      <strong>${s.name}</strong><br>
+      📍 ${s.area} | ${s.category}<br>
+      📱 ${s.mobile}
+    </div>`;
   });
-  
-  // Tab events
-  $("#chat-tab").addEventListener("click", switchToChat);
-  $("#category-tab").addEventListener("click", switchToCategories);
-  
-  // Category delegation
-  initCategoryButtons();
-  
-  DIRECTORY = [...DUMMY_DIRECTORY];
-  $("#last-updated").textContent = new Date().toLocaleString();
-  
-  console.log("Initialization complete!");
-});
+  addMsg(msg);
+}
+
+// CATEGORIES
+function showCategories() {
+  const grid = q("categories-grid");
+  const cats = {};
+  SERVICES.forEach((s) => (cats[s.category] = (cats[s.category] || 0) + 1));
+
+  grid.innerHTML = Object.entries(cats)
+    .map(
+      ([cat, count]) => `
+    <button class="p-6 rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 hover:from-blue-500 hover:to-blue-600 hover:text-white border hover:border-blue-300 transition-all duration-300 shadow-md" onclick="showVendors('${cat}')">
+      <div class="text-3xl mb-2">${getEmoji(cat)}</div>
+      <div class="font-bold text-lg">${cat.charAt(0).toUpperCase() + cat.slice(1)}</div>
+      <div class="text-sm opacity-75">${count} services</div>
+    </button>
+  `,
+    )
+    .join("");
+  q("vendors-list").innerHTML = "";
+}
+
+function getEmoji(cat) {
+  return (
+    {
+      plumber: "🔧",
+      electrician: "⚡",
+      food: "🍛",
+      vegetable: "🥕",
+      maid: "🧹",
+    }[cat] || "👥"
+  );
+}
+
+function showVendors(cat) {
+  currentCat = cat;
+  const vendors = SERVICES.filter((s) => s.category === cat);
+  const list = q("vendors-list");
+
+  list.innerHTML = `
+    <div class="mb-8 p-4 bg-blue-50 rounded-2xl">
+      <button class="text-blue-600 hover:text-blue-800 font-semibold mb-4 flex items-center" onclick="showCategories()">
+        ← Back to Categories
+      </button>
+      <h2 class="text-2xl font-bold">${cat.toUpperCase()} (${vendors.length})</h2>
+    </div>
+    ${vendors
+      .map(
+        (v) => `
+      <div class="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all border">
+        <h3 class="font-bold text-xl mb-2">${v.name}</h3>
+        <div class="text-sm text-gray-600 mb-4">${v.area} • ${v.tags}</div>
+        <div class="flex gap-3">
+          <a href="tel:+91${v.mobile}" class="flex-1 bg-green-500 hover:bg-green-600 text-white py-3 px-4 rounded-xl text-center font-semibold">📞 Call</a>
+          <a href="https://wa.me/91${v.mobile}" target="_blank" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-xl text-center font-semibold">💬 WhatsApp</a>
+        </div>
+      </div>
+    `,
+      )
+      .join("")}
+  `;
+}
+
+// LOAD SAVED USER
+if (localStorage.getItem("user")) {
+  currentUser = JSON.parse(localStorage.getItem("user"));
+  document.getElementById("auth-screen").style.display = "none";
+  document.getElementById("directory-screen").style.display = "flex";
+  showCategories();
+}

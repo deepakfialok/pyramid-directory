@@ -1,78 +1,148 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Society Services Directory</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: { extend: { colors: { primary: '#1a73e8', success: '#10b981' } } }
-    }
-  </script>
-</head>
-<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
-  <div id="app" class="max-w-4xl mx-auto h-screen flex flex-col">
-    
-    <!-- AUTH SCREEN -->
-    <div id="auth-screen" class="flex-1 flex flex-col justify-center p-8 max-w-md mx-auto space-y-6 bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl">
-      <div class="text-center">
-        <h2 class="text-3xl font-bold text-gray-900 mb-4">Society Services</h2>
-        <p class="text-gray-600 text-lg">Enter your details to access</p>
-      </div>
-      <div class="space-y-4">
-        <input type="text" id="user-name" class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500" placeholder="Your Name" />
-        <input type="tel" id="user-mobile" class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500" placeholder="10-digit Mobile" />
-        <button id="auth-submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 px-6 rounded-xl font-semibold text-lg shadow-lg">
-          Enter Directory →
-        </button>
-      </div>
-      <p id="auth-error" class="text-red-500 text-center hidden"></p>
-    </div>
-
-    <!-- DIRECTORY SCREEN -->
-    <div id="directory-screen" class="flex-1 flex flex-col hidden bg-white">
-      
-      <!-- TABS -->
-      <div class="bg-white border-b p-4 sticky top-0 z-10 shadow-sm">
-        <div class="flex space-x-3 max-w-2xl mx-auto">
-          <button id="chat-tab-btn" class="flex-1 py-3 px-4 rounded-xl font-semibold text-sm bg-transparent text-gray-700 hover:bg-gray-100">
-            💬 Chat Search
-          </button>
-          <button id="cat-tab-btn" class="flex-1 py-3 px-4 bg-blue-600 text-white rounded-xl font-semibold text-sm shadow-lg hover:bg-blue-700">
-            📂 Categories
+  <head>
+    <meta charset="UTF-8" />
+    <title>Society Services Directory</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: { colors: { primary: "#1a73e8", success: "#10b981" } },
+        },
+      };
+    </script>
+  </head>
+  <body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <div id="app" class="max-w-4xl mx-auto h-screen flex flex-col">
+      <!-- AUTH SCREEN -->
+      <div
+        id="auth-screen"
+        class="flex-1 flex flex-col justify-center p-8 max-w-md mx-auto space-y-6 bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl"
+      >
+        <div class="text-center">
+          <h2 class="text-3xl font-bold text-gray-900 mb-4">
+            Society Services
+          </h2>
+          <p class="text-gray-600 text-lg">Enter your details to access</p>
+        </div>
+        <div class="space-y-4">
+          <input
+            type="text"
+            id="user-name"
+            class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500"
+            placeholder="Your Name"
+          />
+          <input
+            type="tel"
+            id="user-mobile"
+            class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500"
+            placeholder="10-digit Mobile"
+          />
+          <button
+            id="auth-submit"
+            class="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 px-6 rounded-xl font-semibold text-lg shadow-lg"
+          >
+            Enter Directory →
           </button>
         </div>
+        <p id="auth-error" class="text-red-500 text-center hidden"></p>
       </div>
 
-      <!-- CHAT TAB -->
-      <div id="chat-container" class="flex-1 flex flex-col hidden">
-        <div class="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 text-center">
-          <h3 class="text-xl font-bold mb-1">Ask Anything</h3>
-          <p class="text-blue-100 text-sm">Try: "plumber Tower A" or "98765"</p>
-        </div>
-        <div id="chat-messages" class="flex-1 p-6 overflow-y-auto space-y-4 bg-gray-50"></div>
-        <div class="p-6 bg-white border-t">
-          <div class="flex gap-2">
-            <input type="text" id="chat-input" class="flex-1 p-4 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Type query..." />
-            <button id="chat-send" class="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-xl">
-              Send →
+      <!-- DIRECTORY SCREEN -->
+      <div id="directory-screen" class="flex-1 flex flex-col hidden bg-white">
+        <!-- TABS -->
+        <div class="bg-white border-b p-4 sticky top-0 z-10 shadow-sm">
+          <div class="flex space-x-3 max-w-2xl mx-auto">
+            <button
+              id="chat-tab-btn"
+              class="flex-1 py-3 px-4 rounded-xl font-semibold text-sm bg-transparent text-gray-700 hover:bg-gray-100"
+            >
+              💬 Chat Search
+            </button>
+            <button
+              id="cat-tab-btn"
+              class="flex-1 py-3 px-4 bg-blue-600 text-white rounded-xl font-semibold text-sm shadow-lg hover:bg-blue-700"
+            >
+              📂 Categories
             </button>
           </div>
         </div>
-      </div>
 
-      <!-- CATEGORY TAB -->
-      <div id="category-container" class="flex-1 overflow-y-auto p-6">
-        <!-- CATEGORIES GRID -->
-        <div id="categories-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8"></div>
-        
-        <!-- VENDORS LIST -->
-        <div id="vendors-list"></div>
+        <!-- Inside directory-screen, after the tabs div -->
+        <div class="bg-white border-b p-4 sticky top-0 z-10 shadow-sm">
+          <div class="flex space-x-3 max-w-2xl mx-auto mb-3">
+            <button
+              id="chat-tab-btn"
+              class="flex-1 py-3 px-4 rounded-xl font-semibold text-sm bg-transparent text-gray-700 hover:bg-gray-100"
+            >
+              💬 Chat Search
+            </button>
+            <button
+              id="cat-tab-btn"
+              class="flex-1 py-3 px-4 bg-blue-600 text-white rounded-xl font-semibold text-sm shadow-lg hover:bg-blue-700"
+            >
+              📂 Categories
+            </button>
+          </div>
+          <!-- NEW REFRESH BUTTON -->
+          <button
+            id="refresh-btn"
+            class="mx-auto block px-6 py-2 bg-green-500 hover:bg-green-600 text-white rounded-xl font-semibold shadow-lg transition-all duration-200 text-sm flex items-center gap-2"
+          >
+            🔄 Refresh Data <span id="loading-spin" class="hidden">⏳</span>
+          </button>
+          <div class="text-xs text-gray-500 text-center mt-1">
+            Last updated: <span id="last-update">Never</span>
+          </div>
+        </div>
+
+        <!-- CHAT TAB -->
+        <div id="chat-container" class="flex-1 flex flex-col hidden">
+          <div
+            class="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 text-center"
+          >
+            <h3 class="text-xl font-bold mb-1">Ask Anything</h3>
+            <p class="text-blue-100 text-sm">
+              Try: "plumber Tower A" or "98765"
+            </p>
+          </div>
+          <div
+            id="chat-messages"
+            class="flex-1 p-6 overflow-y-auto space-y-4 bg-gray-50"
+          ></div>
+          <div class="p-6 bg-white border-t">
+            <div class="flex gap-2">
+              <input
+                type="text"
+                id="chat-input"
+                class="flex-1 p-4 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                placeholder="Type query..."
+              />
+              <button
+                id="chat-send"
+                class="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-xl"
+              >
+                Send →
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- CATEGORY TAB -->
+        <div id="category-container" class="flex-1 overflow-y-auto p-6">
+          <!-- CATEGORIES GRID -->
+          <div
+            id="categories-grid"
+            class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8"
+          ></div>
+
+          <!-- VENDORS LIST -->
+          <div id="vendors-list"></div>
+        </div>
       </div>
     </div>
-  </div>
 
-  <script src="script.js"></script>
-</body>
+    <script src="script.js"></script>
+  </body>
 </html>
